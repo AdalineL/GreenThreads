@@ -1,74 +1,33 @@
-;globals [
-;  total-patches
-;]
-;
-;to reset-ratios
-;  set clay 33.3
-;  set silt 33.3
-;  set sand 33.4
-;end
-;
-;to setup
-;  clear-all
-;  orbit-down 70
-;  orbit-left 60
-;  set total-patches count patches
-;  distribute-colors
-;  display
-;end
-;
-;to distribute-colors
-;  ; Calculate the number of patches for clay, silt, and sand
-;  let clay-count round ((clay / 100) * total-patches)
-;  let silt-count round ((silt / 100) * total-patches)
-;  let sand-count total-patches - clay-count - silt-count
-;
-;  ; Convert the agentset of all patches to a list and shuffle it
-;  let shuffled-patches shuffle (sort patches)
-;
-;  ; Assign colors based on the shuffled list and calculated counts
-;  let index 0
-;  while [index < clay-count] [
-;    ask item index shuffled-patches [ set pcolor gray ]
-;    set index index + 1
-;  ]
-;  while [index < clay-count + silt-count] [
-;    ask item index shuffled-patches [ set pcolor brown ]
-;    set index index + 1
-;  ]
-;  while [index < total-patches] [
-;    ask item index shuffled-patches [ set pcolor yellow ]
-;    set index index + 1
-;  ]
-;end
-;
-;to go
-;  distribute-colors
-;end
-
 globals [
   total-patches
+  gray-transparent
+  brown-transparent
+  yellow-transparent
 ]
 
-; Assuming you have sliders or globals for clay, silt, sand, and their porosities
 to setup
   clear-all
   orbit-down 70
   orbit-left 60
-  reset-patches
-  distribute-colors
-  add-water-source
+  set total-patches count patches ;; resets patches
+  set gray-transparent [169 169 169 30] ;; RGB value, then transparency
+  set brown-transparent [150 75 0 30]
+  set yellow-transparent [255 255 0 30]
+  distribute-colors ;; set up soil composition
+  add-water-source ;; add water on top face
   display
 end
 
-to reset-patches
-  set total-patches count patches
-end
-
-to reset-ratios
+to reset-ratios-111
   set clay 33.3
   set silt 33.3
   set sand 33.4
+end
+
+to reset-ratios-122
+  set clay 20.0
+  set silt 40.0
+  set sand 40.0
 end
 
 to distribute-colors
@@ -81,25 +40,26 @@ to distribute-colors
   let shuffled-patches shuffle (sort patches)
 
   ; Assign colors based on the shuffled list and calculated counts
+  ; colors are transparent so you can see water flowing through
   let index 0
   while [index < clay-count] [
-    ask item index shuffled-patches [ set pcolor [169 169 169 60] ]
+    ask item index shuffled-patches [ set pcolor gray-transparent ]
     set index index + 1
   ]
   while [index < clay-count + silt-count] [
-    ask item index shuffled-patches [ set pcolor [150 75 0 60] ]
+    ask item index shuffled-patches [ set pcolor brown-transparent ]
     set index index + 1
   ]
   while [index < total-patches] [
-    ask item index shuffled-patches [ set pcolor [255 255 0 60] ]
+    ask item index shuffled-patches [ set pcolor yellow-transparent ]
     set index index + 1
   ]
 end
 
 to add-water-source
-  ; Introduce water at the top. Adjust the range as needed to cover more area.
-  ask patches with [pycor > (max-pycor - 2)] [
-    set pcolor blue  ; Represents water
+  ; add water source on the top face
+  ask patches with [pzcor > (max-pzcor - 2)] [
+    set pcolor blue
   ]
 end
 
@@ -116,19 +76,17 @@ to flow-water
     if (below != nobody) [
       ; Determine action based on the type of soil of the patch below.
       ; We only attempt to move water if the patch below is not water (blue) and within bounds.
-      if ([pcolor] of below != blue and [pcolor] of below != [255 255 0 60]) [
-        ifelse [pcolor] of below = [169 169 169 60]  ; Clay, less porous
-        [ if random-float 1 < 0.3 [ ask below [ set pcolor blue ] ] ]
-        [ ifelse [pcolor] of below = brown  ; Silt, moderately porous
-          [ if random-float 1 < 0.5 [ ask below [ set pcolor blue ] ] ]
-          [ if random-float 1 < 0.7 [ ask below [ set pcolor blue ] ] ]  ; Sand, most porous
+      if ([pcolor] of below != blue and [pcolor] of below != yellow-transparent) [
+        ifelse [pcolor] of below = gray-transparent  ; Clay, less porous, 50% chance
+        [ if random-float 1 < 0.5 [ ask below [ set pcolor blue ] ] ]
+        [ ifelse [pcolor] of below = brown-transparent  ; Silt, moderately porous, 70% chance
+          [ if random-float 1 < 0.7 [ ask below [ set pcolor blue ] ] ]
+          [ if random-float 1 < 0.9 [ ask below [ set pcolor blue ] ] ]  ; Sand, most porous, 90% chance
         ]
       ]
     ]
   ]
 end
-
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 0
@@ -160,10 +118,10 @@ ticks
 30.0
 
 SLIDER
-194
-40
-366
-73
+237
+38
+409
+71
 clay
 clay
 0.0
@@ -175,10 +133,10 @@ clay
 HORIZONTAL
 
 SLIDER
-199
-104
-371
-137
+237
+103
+409
+136
 silt
 silt
 0.0
@@ -190,10 +148,10 @@ silt
 HORIZONTAL
 
 SLIDER
-201
-175
-373
-208
+239
+174
+411
+207
 sand
 sand
 0.0
@@ -205,10 +163,10 @@ sand
 HORIZONTAL
 
 BUTTON
-500
-81
-563
-114
+489
+137
+552
+170
 go
 go
 T
@@ -222,10 +180,10 @@ NIL
 1
 
 BUTTON
-61
-95
-127
-128
+488
+68
+554
+101
 setup
 setup
 NIL
@@ -239,12 +197,12 @@ NIL
 1
 
 BUTTON
-23
-174
-181
-207
-reset ratios to thirds
-reset-ratios
+24
+142
+182
+175
+set ratios to 1:1:1
+reset-ratios-111
 NIL
 1
 T
@@ -253,6 +211,33 @@ NIL
 NIL
 NIL
 NIL
+1
+
+BUTTON
+34
+102
+170
+135
+set ratios 1:2:2
+reset-ratios-122
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+TEXTBOX
+30
+22
+217
+78
+1) Set your ratios (or press either of the set ratios buttons)\n2) Press setup\n3) Press go
+11
+0.0
 1
 
 @#$#@#$#@
