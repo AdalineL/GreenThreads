@@ -13,6 +13,7 @@ to setup
   set gray-transparent [169 169 169 30] ;; RGB value, then transparency
   set brown-transparent [150 75 0 30]
   set yellow-transparent [255 255 0 30]
+  set-soil-type
   distribute-colors ;; set up soil composition
   add-water-source ;; add water on top face
   display
@@ -29,6 +30,63 @@ to reset-ratios-122
   set silt 40.0
   set sand 40.0
 end
+
+to set-soil-type
+  if soil-type = "tClay" [
+    set clay 80.0
+    set silt 10.0
+    set sand 10.0
+  ] if soil-type = "Sandy-Clay" [
+    set clay 45.0
+    set silt 5.0
+    set sand 50.0
+  ] if soil-type = "Sandy-Clay-Loam" [
+    set clay 30.0
+    set silt 10.0
+    set sand 60.0
+  ] if soil-type = "Sandy-Loam" [
+    set clay 10.0
+    set silt 20.0
+    set sand 70.0
+  ] if soil-type = "Loamy-Sand" [
+    set clay 5.0
+    set silt 15.0
+    set sand 80.0
+  ] if soil-type = "tSand" [
+    set clay 5.0
+    set silt 5.0
+    set sand 90.0
+  ] if soil-type = "Loam" [
+    set clay 20.0
+    set silt 40.0
+    set sand 40.0
+  ] if soil-type = "Clay-Loam" [
+    set clay 35.0
+    set silt 35.0
+    set sand 30.0
+  ] if soil-type = "Silty-Clay" [
+    set clay 50.0
+    set silt 45.0
+    set sand 5.0
+  ] if soil-type = "Silty-Clay-Loam" [
+    set clay 35.0
+    set silt 55.0
+    set sand 10.0
+  ] if soil-type = "Silt-Loam" [
+    set clay 15.0
+    set silt 65.0
+    set sand 20.0
+  ] if soil-type = "tSilt" [
+    set clay 5.0
+    set silt 90.0
+    set sand 5.0
+  ] if soil-type = "sliders" [
+    set clay clay
+    set silt silt
+    set sand sand
+  ]
+end
+
 
 to distribute-colors
   ; Calculate the number of patches for clay, silt, and sand
@@ -70,19 +128,26 @@ end
 
 to flow-water
   ; Simulate water flowing down through the soil in 3D
+  let saturated-count count patches with [pcolor = blue]
+  let target-saturated floor (total-patches * rainfall)
+
+  if saturated-count >= target-saturated [ stop ]
+
+  wait 0.05
+
   ask patches with [pcolor = blue] [
-    ; In a 3D model, we consider the patch directly below in the z-axis (dz = -1).
     let below patch-at 0 0 -1
-    if (below != nobody) [
-      ; Determine action based on the type of soil of the patch below.
-      ; We only attempt to move water if the patch below is not water (blue) and within bounds.
-      if ([pcolor] of below != blue and [pcolor] of below != yellow-transparent) [
-        ifelse [pcolor] of below = gray-transparent  ; Clay, less porous, 50% chance
-        [ if random-float 1 < 0.5 [ ask below [ set pcolor blue ] ] ]
-        [ ifelse [pcolor] of below = brown-transparent  ; Silt, moderately porous, 70% chance
-          [ if random-float 1 < 0.7 [ ask below [ set pcolor blue ] ] ]
-          [ if random-float 1 < 0.9 [ ask below [ set pcolor blue ] ] ]  ; Sand, most porous, 90% chance
-        ]
+    if (below != nobody and [pcolor] of below != blue and [pcolor] of below != black) [
+      let porosityChance 0  ; Determine chance based on soil type
+      ifelse [pcolor] of below = gray-transparent
+      [ set porosityChance 0.25 ]
+      [ ifelse [pcolor] of below = brown-transparent
+        [ set porosityChance 0.3 ]
+        [ set porosityChance 0.7 ]  ; Sand has the highest chance
+      ]
+
+      if random-float 1 < porosityChance * rainfall [
+        ask below [ set pcolor blue ]  ; Water moves to this patch
       ]
     ]
   ]
@@ -126,7 +191,7 @@ clay
 clay
 0.0
 100.0
-33.3
+15.0
 0.5
 1
 %
@@ -141,7 +206,7 @@ silt
 silt
 0.0
 100.0
-33.3
+65.0
 0.5
 1
 %
@@ -156,7 +221,7 @@ sand
 sand
 0.0
 100.0
-33.4
+20.0
 0.5
 1
 %
@@ -235,10 +300,35 @@ TEXTBOX
 22
 217
 78
-1) Set your ratios (or press either of the set ratios buttons)\n2) Press setup\n3) Press go
+1) Set your ratios (using buttons or set-type selector)\n2) Press setup\n3) Press go
 11
 0.0
 1
+
+SLIDER
+240
+234
+412
+267
+rainfall
+rainfall
+0
+1
+0.6
+0.05
+1
+NIL
+HORIZONTAL
+
+CHOOSER
+32
+204
+191
+249
+soil-type
+soil-type
+"sliders" "tClay" "Sandy-Clay" "Sandy-Clay-Loam" "Sandy-Loam" "Loamy-Sand" "tSand" "Loam" "Clay-Loam" "Silty-Clay" "Silty-Clay-Loam" "Silt-Loam" "tSilt"
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
