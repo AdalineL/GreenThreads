@@ -3,6 +3,7 @@ globals [
   gray-transparent
   brown-transparent
   yellow-transparent
+  green-transparent
 ]
 
 to setup
@@ -13,6 +14,7 @@ to setup
   set gray-transparent [169 169 169 30] ;; RGB value, then transparency
   set brown-transparent [150 75 0 30]
   set yellow-transparent [255 255 0 30]
+  set green-transparent [0 255 0 30]
   set-soil-type
   distribute-colors ;; set up soil composition
   add-water-source ;; add water on top face
@@ -99,6 +101,8 @@ to distribute-colors
 
   ; Assign colors based on the shuffled list and calculated counts
   ; colors are transparent so you can see water flowing through
+
+
   let index 0
   while [index < clay-count] [
     ask item index shuffled-patches [ set pcolor gray-transparent ]
@@ -112,7 +116,19 @@ to distribute-colors
     ask item index shuffled-patches [ set pcolor yellow-transparent ]
     set index index + 1
   ]
+
+  let org-count round ((org_matter / 100) * total-patches)
+  let org_index 0
+
+  while [org_index < org-count] [
+    ask item org_index shuffled-patches [
+      set pcolor green-transparent
+      ;set shape "circle"
+    ]
+    set org_index org_index + 1
+  ]
 end
+
 
 to add-water-source
   ; add water source on the top face
@@ -329,6 +345,21 @@ soil-type
 soil-type
 "sliders" "tClay" "Sandy-Clay" "Sandy-Clay-Loam" "Sandy-Loam" "Loamy-Sand" "tSand" "Loam" "Clay-Loam" "Silty-Clay" "Silty-Clay-Loam" "Silt-Loam" "tSilt"
 11
+
+SLIDER
+260
+348
+432
+381
+org_matter
+org_matter
+0
+100
+31.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
