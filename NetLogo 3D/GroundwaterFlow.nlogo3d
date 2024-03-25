@@ -211,7 +211,7 @@ end
 
 to run-rain
   ask drops [
-    ifelse (pxcor <= min-pxcor or pxcor >= max-pxcor or pzcor <= min-pzcor or pzcor >= max-pzcor)
+    ifelse (pxcor <= min-pxcor or pxcor >= max-pxcor or pzcor <= min-pzcor or pzcor >= max-pzcor or pycor <= min-pycor or pycor >= max-pycor)
     [ die ]
     [ fd 0.3 ]
   ]
@@ -226,21 +226,22 @@ to create-rain
     create-drops 1 [
       set heading 160
       set color blue
-      setxyz  random-xcor max-pycor random-zcor
+      setxyz  random-xcor max-pycor - 1 random-zcor
     ]
   ]
 end
 
 to encounter-soil
-  let m tan slope-angle * (pi / 180) ;
+  let m (tan slope-angle) * (pi / 180) ;
   let runoff 0.3 ; SET RUNOFF VARIABLE, TEMPORARY
 
   ask drops with [ ycor < (m * xcor)] [
-    ifelse 100 * runoff > random 100
-    [set heading -30]
-    [set heading 180
-     set color red
-     fd 0.05 ]
+    set color red
+;    ifelse 100 * runoff > random 100
+;    [set heading -30]
+;    [set heading 180
+;     set color red
+;     fd 0.05 ]
   ]
 end
 @#$#@#$#@
