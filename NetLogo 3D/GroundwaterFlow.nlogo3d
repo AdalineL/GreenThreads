@@ -12,7 +12,7 @@ globals [
 breed [drops drop]     ;; droplets of rain
 
 to setup
-;  clear-all
+  clear-all
 ;  orbit-down 70
 ;  orbit-left 60
 
@@ -211,8 +211,9 @@ end
 
 to run-rain
   ask drops [
-    if not can-move? 0.3 [ die ]
-    fd 0.3
+    ifelse (pxcor <= min-pxcor or pxcor >= max-pxcor or pzcor <= min-pzcor or pzcor >= max-pzcor)
+    [ die ]
+    [ fd 0.3 ]
   ]
   create-rain
   encounter-soil
@@ -233,13 +234,13 @@ end
 to encounter-soil
   let m tan slope-angle * (pi / 180) ;
   let runoff 0.3 ; SET RUNOFF VARIABLE, TEMPORARY
-  ask drops with [ pycor <= ((m * pxcor) + 2) and pycor >= ((m * pxcor) - 2)] [
-    set color red
+
+  ask drops with [ ycor < (m * xcor)] [
     ifelse 100 * runoff > random 100
-    [rt slope-angle]
+    [set heading -30]
     [set heading 180
-;      let slope-heading atan m * 180 / pi
-     fd 0.01 ]
+     set color red
+     fd 0.05 ]
   ]
 end
 @#$#@#$#@
