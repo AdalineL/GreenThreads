@@ -1,9 +1,9 @@
 globals [
   total-patches
-  gray-transparent
-  brown-transparent
-  yellow-transparent
-  green-transparent
+  gray-transparent ; clay
+  brown-transparent ; silt
+  yellow-transparent ; sand
+  green-transparent ; organic matter
 ]
 
 to setup
@@ -101,18 +101,16 @@ to distribute-colors
 
   ; Assign colors based on the shuffled list and calculated counts
   ; colors are transparent so you can see water flowing through
-
-
   let index 0
-  while [index < clay-count] [
+  while [index < clay-count] [ ; clay
     ask item index shuffled-patches [ set pcolor gray-transparent ]
     set index index + 1
   ]
-  while [index < clay-count + silt-count] [
+  while [index < clay-count + silt-count] [ ; silt
     ask item index shuffled-patches [ set pcolor brown-transparent ]
     set index index + 1
   ]
-  while [index < total-patches] [
+  while [index < total-patches] [ ; sand
     ask item index shuffled-patches [ set pcolor yellow-transparent ]
     set index index + 1
   ]
@@ -120,7 +118,7 @@ to distribute-colors
   let org-count round ((org_matter / 100) * total-patches)
   let org_index 0
 
-  while [org_index < org-count] [
+  while [org_index < org-count] [ ; organic matter
     ask item org_index shuffled-patches [
       set pcolor green-transparent
       ;set shape "circle"
@@ -132,7 +130,7 @@ end
 
 to add-water-source
   ; add water source on the top face
-  ask patches with [pzcor > (max-pzcor - 2)] [
+  ask patches with [pzcor > (max-pzcor - 2)] [ ; water
     set pcolor blue
   ]
 end
@@ -151,22 +149,27 @@ to flow-water
 
   wait 0.05
 
-  ask patches with [pcolor = blue] [
+   ask patches with [pcolor = blue] [
     let below patch-at 0 0 -1
     if (below != nobody and [pcolor] of below != blue and [pcolor] of below != black) [
       let porosityChance 0  ; Determine chance based on soil type
-      ifelse [pcolor] of below = gray-transparent
-      [ set porosityChance 0.25 ]
-      [ ifelse [pcolor] of below = brown-transparent
-        [ set porosityChance 0.3 ]
-        [ set porosityChance 0.7 ]  ; Sand has the highest chance
-      ]
 
+      ifelse [pcolor] of below = green-transparent ; org
+      [ set porosityChance 0.1 ]
+
+      [ifelse [pcolor] of below = gray-transparent ; clay
+        [ set porosityChance 0.25 ]
+
+        [ ifelse [pcolor] of below = brown-transparent
+          [ set porosityChance 0.3 ] ; silt
+          [ set porosityChance 0.7 ]  ; Sand has the highest chance, low porosity
+        ]
+      ]
       if random-float 1 < porosityChance * rainfall [
         ask below [ set pcolor blue ]  ; Water moves to this patch
       ]
     ]
-  ]
+   ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -207,7 +210,7 @@ clay
 clay
 0.0
 100.0
-15.0
+10.0
 0.5
 1
 %
@@ -222,7 +225,7 @@ silt
 silt
 0.0
 100.0
-65.0
+20.0
 0.5
 1
 %
@@ -237,7 +240,7 @@ sand
 sand
 0.0
 100.0
-20.0
+70.0
 0.5
 1
 %
@@ -344,7 +347,7 @@ CHOOSER
 soil-type
 soil-type
 "sliders" "tClay" "Sandy-Clay" "Sandy-Clay-Loam" "Sandy-Loam" "Loamy-Sand" "tSand" "Loam" "Clay-Loam" "Silty-Clay" "Silty-Clay-Loam" "Silt-Loam" "tSilt"
-11
+4
 
 SLIDER
 260
@@ -355,7 +358,7 @@ org_matter
 org_matter
 0
 100
-31.0
+9.0
 1
 1
 NIL
