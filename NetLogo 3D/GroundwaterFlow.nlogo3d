@@ -1,6 +1,5 @@
 globals [
   sky-top
-  earth-top
   total-patches
   gray-transparent
   brown-transparent
@@ -9,7 +8,7 @@ globals [
 ]
 
 to setup
-  clear-all
+;  clear-all
 ;  orbit-down 70
 ;  orbit-left 60
   setup-world
@@ -18,29 +17,29 @@ to setup
   set brown-transparent [150 75 0 30]
   set yellow-transparent [255 255 0 30]
   set green-transparent [0 255 0 30]
-;  set-soil-type
+;;  set-soil-type
   distribute-colors ;; set up soil composition
-;  add-water-source ;; add water on top face
+;;  add-water-source ;; add water on top face
   display
 end
 
 to setup-world
+  clear-all
+  let m tan slope-angle * (pi / 180) ;
+
   set sky-top max-pycor - 5
-  set earth-top 0
+
   ask patches [  ;; set colors for the different sections of the world
-    if pycor > sky-top and pycor <= max-pycor [  ;; space
-      set pcolor scale-color white pycor 17 10
+    if pycor > sky-top and pycor <= max-pycor[  ;; space
+      set pcolor scale-color white pycor 50 10
     ]
-    if pycor <= sky-top and pycor > earth-top [ ;; sky
+    if pycor <= sky-top [ ;; sky
       set pcolor scale-color blue pycor -20 20
     ]
-    if pycor < earth-top [
-;      [ set pcolor brown ] ;; soil
-      set-soil-type
-    ]
-    if pycor = earth-top ;; earth surface
-      [ set pcolor green]
-;      [ set pcolor scale-color green albedo 0 1 ]
+    if pycor < (m * pxcor)  ;; soil, with slope
+       [set pcolor brown]
+;    if pycor = (m * pxcor) ;; earth surface (NOT WORKING)
+;      [ set pcolor red]
   ]
 end
 
@@ -114,9 +113,10 @@ end
 
 
 to distribute-colors
-  let midpoint (earth-top - 1)
+;  let midpoint (earth-top - 1)
   ; Apply to just soil patches
-  let bottom-patches patches with [pycor <= midpoint and pycor < earth-top]
+  let m tan slope-angle * (pi / 180) ;
+  let bottom-patches patches with [pycor < (m * pxcor)]
   let total-bottom-patches count bottom-patches
 
 
@@ -151,7 +151,7 @@ to distribute-colors
   while [org_index < org-count] [
     ask item org_index shuffled-bottom-patches [
       set pcolor green-transparent
-      ;set shape "circle"
+;      set shape "circle"
     ]
     set org_index org_index + 1
   ]
@@ -199,8 +199,8 @@ end
 GRAPHICS-WINDOW
 0
 0
-439
-460
+541
+542
 -1
 -1
 13.0
@@ -213,12 +213,12 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
--16
-16
+-20
+20
+-20
+20
+-20
+20
 1
 0
 1
@@ -383,6 +383,21 @@ org_matter
 0
 100
 19.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+583
+289
+755
+322
+slope-angle
+slope-angle
+-89
+-70
+-84.0
 1
 1
 NIL
