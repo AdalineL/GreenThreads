@@ -7,9 +7,11 @@ globals [
   black-transparent
   sky-transparent
   white-transparent
+  angle-radians
 ]
 
 breed [drops drop]     ;; droplets of rain
+turtles-own [ has-encountered-soil ]
 
 to setup
   clear-all
@@ -26,6 +28,7 @@ to setup
   set sky-transparent [200 100 0 30]
   set white-transparent [255 255 255 30]
   set-soil-type;
+  set angle-radians slope-angle * (pi / 180)
   distribute-colors ;; set up soil composition
 ;  add-water-source ;; add water on top face
   run-rain
@@ -40,7 +43,7 @@ end
 
 to setup-world
   clear-all
-  let m tan slope-angle * (pi / 180) ;
+  ; let m tan slope-angle * (pi / 180) ; keep in radians
 
   set sky-top max-pycor - 5
   let bg-patches patches with [pzcor = min-pzcor]
@@ -52,9 +55,9 @@ to setup-world
     if pycor <= sky-top [ ;; sky
       set pcolor scale-color blue pycor -20 20
     ]
-    if pycor < (m * pxcor)  ;; soil, with slope
+    if pycor < (angle-radians * pxcor)  ;; soil, with slope
        [set pcolor brown]
-;    if pycor = (m * pxcor) ;; earth surface (NOT WORKING)
+;    if pycor = (angle-radians * pxcor) ;; earth surface (NOT WORKING)
 ;      [ set pcolor red]
   ]
 end
@@ -131,8 +134,8 @@ end
 to distribute-colors
 ;  let midpoint (earth-top - 1)
   ; Apply to just soil patches
-  let m tan slope-angle * (pi / 180) ;
-  let bottom-patches patches with [pycor < (m * pxcor)]
+  ; let m tan slope-angle * (pi / 180) ; keep in radians
+  let bottom-patches patches with [pycor < (angle-radians * pxcor)]
   let total-bottom-patches count bottom-patches
 
 
@@ -227,21 +230,25 @@ to create-rain
       set heading 160
       set color blue
       setxyz  random-xcor max-pycor - 1 random-zcor
+      set has-encountered-soil false
     ]
   ]
 end
 
 to encounter-soil
-  let m (tan slope-angle) * (pi / 180) ;
+  ; let m tan slope-angle * (pi / 180) ; keep in radians
   let runoff 0.3 ; SET RUNOFF VARIABLE, TEMPORARY
 
-  ask drops with [ ycor < (m * xcor)] [
-    set color red
-;    ifelse 100 * runoff > random 100
-;    [set heading -30]
-;    [set heading 180
-;     set color red
-;     fd 0.05 ]
+  ask drops [
+    if not has-encountered-soil and ycor < (angle-radians * xcor) [
+      set has-encountered-soil true
+      ifelse 100 * runoff > random 100
+      [set heading (90 - slope-angle)
+        set color green]
+      [set heading 180
+        set color red
+        fd 0.05]
+    ]
   ]
 end
 @#$#@#$#@
@@ -444,9 +451,9 @@ SLIDER
 322
 slope-angle
 slope-angle
--89
--70
--84.0
+-180
+180
+-47.0
 1
 1
 NIL
