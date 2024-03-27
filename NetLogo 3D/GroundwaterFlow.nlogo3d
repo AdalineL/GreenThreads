@@ -55,6 +55,7 @@ to setup-world
     if pycor <= sky-top [ ;; sky
       set pcolor scale-color blue pycor -20 20
     ]
+    set angle-radians slope-angle * (pi / 180)
     if pycor < (angle-radians * pxcor)  ;; soil, with slope
        [set pcolor brown]
 ;    if pycor = (angle-radians * pxcor) ;; earth surface (NOT WORKING)
