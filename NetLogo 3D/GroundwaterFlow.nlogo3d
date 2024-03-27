@@ -39,6 +39,7 @@ end
 to go
   run-rain
 ;  setup-world
+;  distribute-colors
 ;  display
   tick
 end
@@ -242,7 +243,7 @@ to encounter-soil
   let runoff 0.3 ; SET RUNOFF VARIABLE, TEMPORARY
 
   ask drops [
-    if not has-encountered-soil and ycor < ((angle-radians * xcor)+ 1) [
+    if not has-encountered-soil and ycor < ((angle-radians * xcor)+ 2) [
       set has-encountered-soil true
       ifelse 100 * runoff > random 100
       [ set color green
@@ -448,7 +449,7 @@ slope-angle
 slope-angle
 -60
 60
--27.0
+-34.0
 1
 1
 NIL
