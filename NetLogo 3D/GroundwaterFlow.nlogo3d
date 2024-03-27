@@ -240,10 +240,13 @@ to encounter-soil
   let runoff 0.3 ; SET RUNOFF VARIABLE, TEMPORARY
 
   ask drops [
-    if not has-encountered-soil and ycor < (angle-radians * xcor) [
+    if not has-encountered-soil and ycor < ((angle-radians * xcor)+ 1) [
       set has-encountered-soil true
       ifelse 100 * runoff > random 100
-      [set heading (90 - slope-angle)
+      [ ifelse slope-angle < 0 ; if negative slope, flow downwards
+        [set heading (90 - slope-angle)]
+        [set heading (270 - slope-angle)]
+;        set heading (90 - slope-angle) WORKS KINDA
         set color green]
       [set heading 180
         set color red
@@ -451,9 +454,9 @@ SLIDER
 322
 slope-angle
 slope-angle
--180
-180
--47.0
+-60
+60
+24.0
 1
 1
 NIL
