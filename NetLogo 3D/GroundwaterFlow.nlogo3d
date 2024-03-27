@@ -19,7 +19,7 @@ to setup
 ;  orbit-left 60
 
   setup-world
-  set-default-shape drops "circle"
+  set-default-shape drops "line"
   set total-patches count patches ;; resets patches
   set gray-transparent [169 169 169 30] ;; RGB value, then transparency
   set brown-transparent [150 75 0 30]
@@ -37,12 +37,12 @@ end
 
 to go
   run-rain
+  setup-world
 ;  display
   tick
 end
 
 to setup-world
-  clear-all
   ; let m tan slope-angle * (pi / 180) ; keep in radians
 
   set sky-top max-pycor - 5
@@ -57,7 +57,7 @@ to setup-world
     ]
     set angle-radians slope-angle * (pi / 180)
     if pycor < (angle-radians * pxcor)  ;; soil, with slope
-       [set pcolor brown]
+        [set pcolor brown]
 ;    if pycor = (angle-radians * pxcor) ;; earth surface (NOT WORKING)
 ;      [ set pcolor red]
   ]
@@ -226,7 +226,7 @@ end
 to create-rain
   ;; don't create rain at each tick
   ;; as rain increases, make more
-  if 2 * rain > random 50 [
+  if 10 * rain > random 50 [
     create-drops 1 [
       set heading 160
       set color blue
@@ -244,14 +244,18 @@ to encounter-soil
     if not has-encountered-soil and ycor < ((angle-radians * xcor)+ 1) [
       set has-encountered-soil true
       ifelse 100 * runoff > random 100
-      [ ifelse slope-angle < 0 ; if negative slope, flow downwards
+      [ set color green
+        ifelse slope-angle < 0 ; if negative slope, flow downwards
         [set heading (90 - slope-angle)]
         [set heading (270 - slope-angle)]
-;        set heading (90 - slope-angle) WORKS KINDA
-        set color green]
-      [set heading 180
+        ]
+      [ fd 0.01
         set color red
-        fd 0.05]
+        set heading 180
+;        ifelse slope-angle < 0 ; if negative slope, flow downwards
+;        [set heading (135 - slope-angle)]
+;        [set heading (225 - slope-angle)]
+        ]
     ]
   ]
 end
@@ -408,21 +412,6 @@ TEXTBOX
 0.0
 1
 
-SLIDER
-314
-232
-486
-265
-rainfall
-rainfall
-0
-1
-0.3
-0.05
-1
-NIL
-HORIZONTAL
-
 CHOOSER
 69
 195
@@ -442,7 +431,7 @@ org_matter
 org_matter
 0
 5
-2.0
+3.0
 1
 1
 NIL
@@ -457,22 +446,22 @@ slope-angle
 slope-angle
 -60
 60
-24.0
+-24.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-118
-301
-290
-334
+312
+238
+484
+271
 rain
 rain
 0
 5.0
-2.0
+1.0
 0.5
 1
 NIL
@@ -675,6 +664,8 @@ line
 true
 0
 Line -7500403 true 150 0 150 300
+Rectangle -7500403 true true 120 0 180 315
+Rectangle -7500403 true true 90 0 210 300
 
 line half
 true
