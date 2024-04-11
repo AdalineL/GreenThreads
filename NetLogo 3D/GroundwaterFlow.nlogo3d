@@ -9,6 +9,8 @@ globals [
   white-transparent
   angle-radians
   runoff-acc
+  infilt-acc
+  kSat ; value for adaline <3
 ]
 
 breed [drops drop]     ;; droplets of rain
@@ -20,6 +22,7 @@ to setup
 ;  orbit-left 60
 
   setup-world
+  let output kSat
   set-default-shape drops "line"
   set total-patches count patches ;; resets patches
   set gray-transparent [169 169 169 30] ;; RGB value, then transparency
@@ -37,11 +40,18 @@ to setup
 end
 
 to go
+  set kSat 0
   run-rain
-;  setup-world
-;  distribute-colors
+  setup-world
+  distribute-colors
+  update-output
 ;  display
   tick
+end
+
+to update-output
+  clear-output
+  output-print (word "kSat = " kSat)
 end
 
 to setup-world
@@ -137,47 +147,111 @@ end
 to distribute-colors
 ;  let midpoint (earth-top - 1)
   ; Apply to just soil patches
-  ; let m tan slope-angle * (pi / 180) ; keep in radians
+  set angle-radians slope-angle * (pi / 180)
+  let soil-colors (list gray-transparent brown-transparent yellow-transparent)
+
   let bottom-patches patches with [pycor < (angle-radians * pxcor)]
   let total-bottom-patches count bottom-patches
 
+  ; Wwhere soil not is (for live)
+  let empty-bottom-patches bottom-patches with [not member? pcolor soil-colors]
+  let empty-count count empty-bottom-patches
 
-  ; Calculate the number of patches for clay, silt, and sand
-  let clay-count round ((clay / 100) * total-bottom-patches)
-  let silt-count round ((silt / 100) * total-bottom-patches)
-  let sand-count total-bottom-patches - clay-count - silt-count
+  ; Current Counts
+  let current-clay-count count patches with [pcolor = gray-transparent]
+  let current-silt-count count patches with [pcolor = brown-transparent]
+  let current-sand-count count patches with [pcolor = yellow-transparent]
 
-  ; Convert the agentset of all patches to a list and shuffle it
-  let shuffled-bottom-patches shuffle (sort bottom-patches)
+  ; Desired Counts
+  let desired-clay-count round ((clay / 100) * total-bottom-patches)
+  let desired-silt-count round ((silt / 100) * total-bottom-patches)
+  let desired-sand-count total-bottom-patches - desired-clay-count - desired-silt-count
 
-  ; Assign colors based on the shuffled list and calculated counts
-  ; colors are transparent so you can see water flowing through
-  let index 0
-  while [index < clay-count] [
-    ask item index shuffled-bottom-patches [ set pcolor gray-transparent ]
-    set index index + 1
-  ]
-  while [index < clay-count + silt-count] [
-    ask item index shuffled-bottom-patches [ set pcolor brown-transparent ]
-    set index index + 1
-  ]
-  while [index < total-bottom-patches] [
-    ask item index shuffled-bottom-patches [ set pcolor yellow-transparent ]
-    set index index + 1
-  ]
+  ; Adjust each soil types
+  adjust-soil-type empty-bottom-patches desired-clay-count current-clay-count gray-transparent
+  adjust-soil-type empty-bottom-patches desired-silt-count current-silt-count brown-transparent
+  adjust-soil-type empty-bottom-patches desired-sand-count current-sand-count yellow-transparent
+
+  ; clear patches above soil slope line
+  let above-mx-line patches with [pycor >= (angle-radians * pxcor) and member? pcolor soil-colors]
+  ask above-mx-line [ set pcolor [0 0 0 0] ]
 
 
-  let org-count round ((org_matter / 100) * total-bottom-patches)
-  let org_index 0
 
-  while [org_index < org-count] [
-    ask item org_index shuffled-bottom-patches [
-      set pcolor black
-;      set shape "circle"
+  ;include organic matter
+  let soil-patches (patches with [member? pcolor soil-colors])
+
+;  let shuffled-soil-patches (shuffle (sort soil-patches))
+
+  let org-count round ((org_matter / 100) * (count soil-patches))
+
+  if (org-count > 0) [
+    ask n-of org-count soil-patches [
+      set pcolor black  ; Assuming black represents organic matter
+      ; set shape "circle" if desired
     ]
-    set org_index org_index + 1
   ]
 end
+
+to adjust-soil-type [patches-to-adjust desired-total-count current-count my-color]
+  ; This procedure adjusts the number of patches of a given soil type
+  let adjustment-count desired-total-count - current-count
+  if adjustment-count > 0 [
+    ; If more patches of this soil type are needed
+    let patches-to-change n-of adjustment-count patches-to-adjust
+    ask patches-to-change [ set pcolor my-color ]
+  ]
+  if adjustment-count < 0 [
+    ; If there are too many patches of this soil type
+    let patches-to-change n-of (- adjustment-count) (patches with [pcolor = my-color])
+    ask patches-to-change [ set pcolor [0 0 0 0] ] ; Clearing them to background color
+  ]
+end
+
+;to distribute-colors
+;;  let midpoint (earth-top - 1)
+;  ; Apply to just soil patches
+;  ; let m tan slope-angle * (pi / 180) ; keep in radians
+;  let bottom-patches patches with [pycor < (angle-radians * pxcor)]
+;  let total-bottom-patches count bottom-patches
+;
+;
+;  ; Calculate the number of patches for clay, silt, and sand
+;  let clay-count round ((clay / 100) * total-bottom-patches)
+;  let silt-count round ((silt / 100) * total-bottom-patches)
+;  let sand-count total-bottom-patches - clay-count - silt-count
+;
+;  ; Convert the agentset of all patches to a list and shuffle it
+;  let shuffled-bottom-patches shuffle (sort bottom-patches)
+;
+;  ; Assign colors based on the shuffled list and calculated counts
+;  ; colors are transparent so you can see water flowing through
+;  let index 0
+;  while [index < clay-count] [
+;    ask item index shuffled-bottom-patches [ set pcolor gray-transparent ]
+;    set index index + 1
+;  ]
+;  while [index < clay-count + silt-count] [
+;    ask item index shuffled-bottom-patches [ set pcolor brown-transparent ]
+;    set index index + 1
+;  ]
+;  while [index < total-bottom-patches] [
+;    ask item index shuffled-bottom-patches [ set pcolor yellow-transparent ]
+;    set index index + 1
+;  ]
+;
+;
+;  let org-count round ((org_matter / 100) * total-bottom-patches)
+;  let org_index 0
+;
+;  while [org_index < org-count] [
+;    ask item org_index shuffled-bottom-patches [
+;      set pcolor black
+;;      set shape "circle"
+;    ]
+;    set org_index org_index + 1
+;  ]
+;end
 
 ;to add-water-source
 ;  ; add water source on the top face
@@ -240,10 +314,10 @@ end
 
 to encounter-soil
   ; let m tan slope-angle * (pi / 180) ; keep in radians
-  let runoff 0.3 ; SET RUNOFF VARIABLE, TEMPORARY
+  let runoff 0.75 ; SET RUNOFF VARIABLE, TEMPORARY // hard coded 0.3, 0.5, 0.75
 
   ask drops [
-    if not has-encountered-soil and ycor < ((angle-radians * xcor)+ 2) [
+    if not has-encountered-soil and ycor < ((angle-radians * xcor)+ 1.5) [
       set has-encountered-soil true
       ifelse 100 * runoff > random 100
       [ set color green
@@ -253,6 +327,7 @@ to encounter-soil
         [set heading (270 - slope-angle)]
         ]
       [ fd 0.01
+        set infilt-acc (infilt-acc + 1)
         set color red
         set heading 180
 ;        ifelse slope-angle < 0 ; if negative slope, flow downwards
@@ -293,25 +368,25 @@ ticks
 30.0
 
 SLIDER
-311
-36
-483
-69
+281
+65
+453
+98
 clay
 clay
 0.0
 100.0
-30.0
+80.0
 0.5
 1
 %
 HORIZONTAL
 
 SLIDER
-311
-101
-483
-134
+280
+127
+452
+160
 silt
 silt
 0.0
@@ -323,25 +398,25 @@ silt
 HORIZONTAL
 
 SLIDER
-313
-172
-485
-205
+280
+189
+452
+222
 sand
 sand
 0.0
 100.0
-60.0
+10.0
 0.5
 1
 %
 HORIZONTAL
 
 BUTTON
-590
-157
-653
-190
+500
+158
+563
+191
 go
 go
 T
@@ -355,46 +430,12 @@ NIL
 1
 
 BUTTON
-589
-88
-655
-121
+499
+97
+565
+130
 setup
 setup
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-69
-135
-227
-168
-set ratios to 1:1:1
-reset-ratios-111
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-79
-95
-215
-128
-set ratios 1:2:2
-reset-ratios-122
 NIL
 1
 T
@@ -416,20 +457,20 @@ TEXTBOX
 1
 
 CHOOSER
-69
-195
-228
-240
+179
+243
+338
+288
 soil-type
 soil-type
 "sliders" "tClay" "Sandy-Clay" "Sandy-Clay-Loam" "Sandy-Loam" "Loamy-Sand" "tSand" "Loam" "Clay-Loam" "Silty-Clay" "Silty-Clay-Loam" "Silt-Loam" "tSilt"
-3
+1
 
 SLIDER
-561
-228
-733
-261
+62
+65
+234
+98
 org_matter
 org_matter
 0
@@ -441,41 +482,41 @@ NIL
 HORIZONTAL
 
 SLIDER
-583
-289
-755
-322
+62
+127
+234
+160
 slope-angle
 slope-angle
 -60
 60
--34.0
+-12.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-312
-238
-484
-271
+61
+189
+233
+222
 rain
 rain
 0
 5.0
-3.5
+5.0
 0.5
 1
 NIL
 HORIZONTAL
 
 PLOT
-292
-331
-492
-481
-runoff accumulation
+61
+308
+440
+533
+Rain Accumulation
 ticks
 amt
 0.0
@@ -483,10 +524,11 @@ amt
 0.0
 10.0
 true
-false
+true
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot runoff-acc"
+"runoff" 1.0 0 -10899396 true "" "plot runoff-acc"
+"infiltration" 1.0 0 -2674135 true "" "plot infilt-acc"
 
 @#$#@#$#@
 ## WHAT IS IT?
