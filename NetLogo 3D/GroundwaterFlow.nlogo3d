@@ -10,8 +10,12 @@ globals [
   angle-radians
   runoff-acc
   infilt-acc
-  kSat ; value for adaline <3
+  kSat ; shows clay-silt-sand ratio
+  kSat-prob
+  rain-prob
+  slope-prob
   prev-slope
+  runoff-prob
 ]
 
 breed [drops drop]     ;; droplets of rain
@@ -23,8 +27,11 @@ to setup
 ;  orbit-left 60
 
   setup-world
+
+  set kSat 40 ;TO CHANGE, PRINT FOR OUTPUT
+
   let output kSat
-  set prev-slope slope-angle
+  set prev-slope 0
   set-default-shape drops "line"
   set total-patches count patches ;; resets patches
   set gray-transparent [169 169 169 30] ;; RGB value, then transparency
@@ -42,11 +49,11 @@ to setup
 end
 
 to go
-  set kSat 0
   run-rain
   setup-world
 ;  distribute-colors
   if (prev-slope != slope-angle) [
+    update-runoff-prob
     set angle-radians slope-angle * (pi / 180)
     distribute-colors
     update-runoff
@@ -59,7 +66,11 @@ end
 
 to update-output
   clear-output
-  output-print (word "kSat = " kSat)
+  output-print (word kSat)
+;  output-print (word "kSat prob = " kSat-prob)
+;  output-print (word "slope prob = " slope-prob) ; TEMPORARY FOR DEBUGGING
+;  output-print (word "rain prob = " rain-prob) ; TEMPORARY FOR DEBUGGING
+;  output-print (word "runoff prob = " runoff-prob) ; TEMPORARY FOR DEBUGGING
 end
 
 to setup-world
@@ -322,7 +333,8 @@ end
 
 to encounter-soil
   ; let m tan slope-angle * (pi / 180) ; keep in radians
-  let runoff 0.75 ; SET RUNOFF VARIABLE, TEMPORARY // hard coded 0.3, 0.5, 0.75
+  update-runoff-prob
+  let runoff runoff-prob
 
   ask drops [
     if not has-encountered-soil and ycor < ((angle-radians * xcor)+ 1.5) [
@@ -334,7 +346,7 @@ to encounter-soil
         [set heading (90 - slope-angle)]
         [set heading (270 - slope-angle)]
         ]
-      [ fd 0.01 ; infiltration
+      [ fd 0.01 ; infiltration slows down
         set infilt-acc (infilt-acc + 1)
         set color red
         set heading 180
@@ -361,6 +373,94 @@ to update-runoff
       ]
     ]
   ]
+end
+
+to update-kSat-prob
+  ifelse kSat <= 5 [
+    set kSat-prob 0.1
+  ] [ ifelse kSat <= 10 [
+      set kSat-prob 0.2
+    ] [ ifelse kSat <= 20 [
+        set kSat-prob 0.3
+      ] [ ifelse kSat <= 30 [
+          set kSat-prob 0.4
+        ] [ ifelse kSat <= 40 [
+            set kSat-prob 0.5
+          ] [ ifelse kSat <= 50 [
+              set kSat-prob 0.6
+            ] [ ifelse kSat <= 75 [
+                set kSat-prob 0.7
+              ] [ ifelse kSat <= 90 [
+                  set kSat-prob 0.8
+                ] [
+                  set kSat-prob 0.85
+  ]]]]]]]]
+end
+
+to update-slope-prob
+  let abs-slope abs slope-angle  ; Get the absolute value of the slope angle
+
+  ifelse abs-slope >= 50 [
+    set slope-prob 0.9
+  ] [ ifelse abs-slope >= 40 [
+      set slope-prob 0.8
+      ] [ ifelse abs-slope >= 30 [
+        set slope-prob 0.7
+        ] [ ifelse abs-slope >= 20 [
+          set slope-prob 0.6
+          ] [ ifelse abs-slope >= 10 [
+            set slope-prob 0.5
+          ] [
+            set slope-prob 0.4
+  ]]]]]
+end
+
+to update-rain-prob
+  ifelse rain <= 0.5 [
+    set rain-prob 0.1
+    ] [ ifelse rain <= 1.0 [
+      set rain-prob 0.2
+      ] [ ifelse rain <= 1.5 [
+        set rain-prob 0.3
+        ] [ ifelse rain <= 2.0 [
+          set rain-prob 0.4
+          ] [ ifelse rain <= 2.5 [
+            set rain-prob 0.5
+            ] [ ifelse rain <= 3.0 [
+              set rain-prob 0.6
+              ] [ ifelse rain <= 3.5 [
+                set rain-prob 0.7
+                ] [ ifelse rain <= 4.0 [
+                  set rain-prob 0.8
+                  ] [ ifelse rain <= 4.5 [
+                    set rain-prob 0.9
+                  ] [
+                    set rain-prob 1.0
+  ]]]]]]]]]
+end
+
+to update-runoff-prob
+  update-kSat-prob
+  update-slope-prob
+  update-rain-prob
+  ; Weights according to the ratio 3:2:1
+  let weight-kSat 3
+  let weight-rain 2
+  let weight-slope 1
+
+  ; Calculate weighted probabilities
+  let weighted-kSat kSat-prob * weight-kSat
+  let weighted-rain rain-prob * weight-rain
+  let weighted-slope slope-prob * weight-slope
+
+  ; Calculate the sum of the weights
+  let total-weight weight-kSat + weight-rain + weight-slope
+
+  ; Calculate weighted average of probabilities
+  let weighted-average (weighted-kSat + weighted-rain + weighted-slope) / total-weight
+
+  ; Compute runoff probability
+  set runoff-prob (1 - weighted-average)
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -401,7 +501,7 @@ clay
 clay
 0.0
 100.0
-10.0
+20.0
 0.5
 1
 %
@@ -416,7 +516,7 @@ silt
 silt
 0.0
 100.0
-20.0
+40.0
 0.5
 1
 %
@@ -431,7 +531,7 @@ sand
 sand
 0.0
 100.0
-70.0
+40.0
 0.5
 1
 %
@@ -489,7 +589,7 @@ CHOOSER
 soil-type
 soil-type
 "sliders" "tClay" "Sandy-Clay" "Sandy-Clay-Loam" "Sandy-Loam" "Loamy-Sand" "tSand" "Loam" "Clay-Loam" "Silty-Clay" "Silty-Clay-Loam" "Silt-Loam" "tSilt"
-4
+7
 
 SLIDER
 62
@@ -515,7 +615,7 @@ slope-angle
 slope-angle
 -60
 60
-7.0
+-5.0
 1
 1
 NIL
@@ -530,7 +630,7 @@ rain
 rain
 0
 5.0
-5.0
+4.5
 0.5
 1
 NIL
@@ -554,6 +654,23 @@ true
 PENS
 "runoff" 1.0 0 -10899396 true "" "plot runoff-acc"
 "infiltration" 1.0 0 -2674135 true "" "plot infilt-acc"
+
+OUTPUT
+488
+329
+558
+361
+13
+
+TEXTBOX
+492
+311
+642
+329
+kSat Value
+13
+0.0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
