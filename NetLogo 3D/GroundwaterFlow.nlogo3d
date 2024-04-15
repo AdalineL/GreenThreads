@@ -11,6 +11,7 @@ globals [
   runoff-acc
   infilt-acc
   kSat ; value for adaline <3
+  prev-slope
 ]
 
 breed [drops drop]     ;; droplets of rain
@@ -23,6 +24,7 @@ to setup
 
   setup-world
   let output kSat
+  set prev-slope slope-angle
   set-default-shape drops "line"
   set total-patches count patches ;; resets patches
   set gray-transparent [169 169 169 30] ;; RGB value, then transparency
@@ -43,7 +45,13 @@ to go
   set kSat 0
   run-rain
   setup-world
-  distribute-colors
+;  distribute-colors
+  if (prev-slope != slope-angle) [
+    set angle-radians slope-angle * (pi / 180)
+    distribute-colors
+    update-runoff
+    set prev-slope slope-angle  ; Update the previous slope angle
+  ]
   update-output
 ;  display
   tick
@@ -320,13 +328,13 @@ to encounter-soil
     if not has-encountered-soil and ycor < ((angle-radians * xcor)+ 1.5) [
       set has-encountered-soil true
       ifelse 100 * runoff > random 100
-      [ set color green
+      [ set color green ; runoff
         set runoff-acc (runoff-acc + 1)
         ifelse slope-angle < 0 ; if negative slope, flow downwards
         [set heading (90 - slope-angle)]
         [set heading (270 - slope-angle)]
         ]
-      [ fd 0.01
+      [ fd 0.01 ; infiltration
         set infilt-acc (infilt-acc + 1)
         set color red
         set heading 180
@@ -334,6 +342,23 @@ to encounter-soil
 ;        [set heading (135 - slope-angle)]
 ;        [set heading (225 - slope-angle)]
         ]
+    ]
+  ]
+end
+
+to update-runoff
+  set angle-radians slope-angle * (pi / 180)  ; Convert slope angle to radians
+  ask drops with [color = green] [
+    ; Check if the drop is below the new slope line
+    ifelse (ycor < (angle-radians * xcor + 1.5)) [
+      die  ; Delete the drop
+    ] [
+      ; Adjust heading based on whether the slope angle is positive or negative
+      ifelse slope-angle < 0 [
+        set heading (90 - slope-angle)  ; For negative slopes
+      ] [
+        set heading (270 - slope-angle)  ; For positive slopes
+      ]
     ]
   ]
 end
@@ -376,7 +401,7 @@ clay
 clay
 0.0
 100.0
-80.0
+10.0
 0.5
 1
 %
@@ -391,7 +416,7 @@ silt
 silt
 0.0
 100.0
-10.0
+20.0
 0.5
 1
 %
@@ -406,7 +431,7 @@ sand
 sand
 0.0
 100.0
-10.0
+70.0
 0.5
 1
 %
@@ -464,7 +489,7 @@ CHOOSER
 soil-type
 soil-type
 "sliders" "tClay" "Sandy-Clay" "Sandy-Clay-Loam" "Sandy-Loam" "Loamy-Sand" "tSand" "Loam" "Clay-Loam" "Silty-Clay" "Silty-Clay-Loam" "Silt-Loam" "tSilt"
-1
+4
 
 SLIDER
 62
@@ -490,7 +515,7 @@ slope-angle
 slope-angle
 -60
 60
--12.0
+7.0
 1
 1
 NIL
